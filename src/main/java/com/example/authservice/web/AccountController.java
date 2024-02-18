@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static com.example.authservice.util.JwtUtils.HEADER_ACCOUNT_ID;
+import static com.example.authservice.util.JwtUtils.HEADER_ACCOUNT_GUID;
 import static com.example.authservice.util.JwtUtils.HEADER_TOKEN;
 
 @RestController
@@ -40,6 +40,6 @@ public class AccountController {
 
     @PostMapping
     public void auth(@RequestHeader(value = HEADER_TOKEN, defaultValue = "") String token, HttpServletResponse response) {
-        response.addHeader(HEADER_ACCOUNT_ID, tokenService.getAccountIdFromToken(token));
+        response.addHeader(HEADER_ACCOUNT_GUID, tokenService.getAccountIdFromToken(token));
     }
 }
