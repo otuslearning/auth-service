@@ -4,16 +4,19 @@ import com.example.authservice.api.AccountService;
 import com.example.authservice.api.LoginResponseDto;
 import com.example.authservice.api.RegistrationRequestDto;
 import com.example.authservice.api.TokenService;
+import com.example.authservice.api.UserCreatedEvent;
 import com.example.authservice.converter.AccountConvertor;
 import com.example.authservice.domain.Account;
 import com.example.authservice.exception.AccountUnauthorizedException;
 import com.example.authservice.exception.AccountUniqueException;
+import com.example.authservice.producer.UserCreatedProducer;
 import com.example.authservice.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,13 +25,18 @@ public class AccountServiceImpl implements AccountService {
     private final AccountConvertor accountConvertor;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final UserCreatedProducer userCreatedProducer;
     @Override
     public void register(RegistrationRequestDto request) {
         accountRepository.findAccountByUsername(request.getUsername())
                 .ifPresent(a -> {throw new AccountUniqueException();});
         Account account = accountConvertor.convert(request);
+        account.setAccountGuid(UUID.randomUUID().toString());
         account.setPasswordHash(encodePassword(request.getPassword()));
         accountRepository.save(account);
+        userCreatedProducer.send(UserCreatedEvent.builder()
+                .accountGuid(account.getAccountGuid())
+                .build());
     }
 
     @Override
@@ -39,7 +47,7 @@ public class AccountServiceImpl implements AccountService {
         }
         checkPassword(password, account.get().getPasswordHash());
         return LoginResponseDto.builder()
-                .token(tokenService.generateToken(String.valueOf(account.get().getId())))
+                .token(tokenService.generateToken(String.valueOf(account.get().getAccountGuid())))
                 .build();
     }
 
